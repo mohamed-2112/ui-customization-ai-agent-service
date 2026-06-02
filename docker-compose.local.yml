@@ -1,0 +1,35 @@
+services:
+  ai-agent-postgres:
+    image: postgres:17-alpine
+    container_name: ai-agent-postgres
+    environment:
+      POSTGRES_DB: knowledge_base_agent
+      POSTGRES_USER: agent_user
+      POSTGRES_PASSWORD: agent_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - ai_agent_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent_user -d knowledge_base_agent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ai-agent-service:
+    image: mohamedmohamed1996/kb-ai-agent:0.1.0
+    container_name: ai-agent-service
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://agent_user:agent_password@ai-agent-postgres:5432/knowledge_base_agent
+      APP_ENV: local
+      ALLOW_DEV_USER_HEADER: "false"
+    ports:
+      - "8001:8001"
+    depends_on:
+      ai-agent-postgres:
+        condition: service_healthy
+
+volumes:
+  ai_agent_postgres_data:
